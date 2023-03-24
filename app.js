@@ -11,6 +11,7 @@ if (process.env.NODE_ENV !== "production") {
 const app = express();
 
 const exphbs = require("express-handlebars");
+const todo = require("./models/todo");
 
 app.engine("hbs", exphbs({ defaultLayout: "main", extname: ".hbs" }));
 app.set("view engine", "hbs");
@@ -32,7 +33,7 @@ db.once("open", () => {
 });
 
 // 用 app.use 規定每一筆請求都需要透過 body-parser 進行前置處理
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   Todo.find() // 取出 Todo model 裡的所有資料
@@ -60,6 +61,25 @@ app.get("/todos/:id", (req, res) => {
     .catch((error) => console.log(error));
 });
 
+app.get("/todos/:id/edit", (req, res) => {
+  const id = req.params.id;
+  return Todo.findById(id)
+    .lean()
+    .then((todo) => res.render("edit", { todo }))
+    .catch((error) => console.log(error));
+});
+
+app.post("/todos/:id/edit", (req, res) => {
+  const id = req.params.id;
+  const name = req.body.name; // 從 req.body 拿出表單裡的 name 資料
+  return Todo.findById(id)
+    .then((todo) => {
+      todo.name = name;
+      return todo.save();
+    })
+    .then(() => res.redirect(`/todos/${id}`))
+    .catch((error) => console.log(error));
+});
 app.listen(3000, () => {
   console.log(`this app is running on http://localhost:3000`);
 });
